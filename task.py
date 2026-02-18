@@ -12,17 +12,7 @@ import xgboost as xgb  # XGBoost
 def train_model(X, y, model_type="linear", test_size=0.3, random_state=123):
     """
     Train a machine learning model on X, y.
-
-    Parameters:
-        X (DataFrame): Feature matrix
-        y (Series): Target variable
-        model_type (str): "linear" for LinearRegression, "xgb" for XGBoost
-        test_size (float): Fraction of data for test set
-        random_state (int): Random seed for reproducibility
-
-    Returns:
-        model: trained ML object
-        X_train, X_test, y_train, y_test, y_pred
+    Returns model, X_train, X_test, y_train, y_test, y_pred
     """
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state
@@ -48,13 +38,6 @@ def train_model(X, y, model_type="linear", test_size=0.3, random_state=123):
 def calculate_metrics(y_test, y_pred):
     """
     Calculate R² and RMSE for predictions.
-
-    Parameters:
-        y_test (array-like): True target values
-        y_pred (array-like): Predicted target values
-
-    Returns:
-        r2 (float), rmse (float)
     """
     r2 = r2_score(y_test, y_pred)
     rmse = np.sqrt(mean_squared_error(y_test, y_pred))
@@ -63,20 +46,14 @@ def calculate_metrics(y_test, y_pred):
 def plot_predicted_vs_actual(y_test, y_pred):
     """
     Create a scatter plot of predicted vs actual values with a perfect-fit line.
-
-    Parameters:
-        y_test (array-like): True target values
-        y_pred (array-like): Predicted target values
-
-    Returns:
-        matplotlib.pyplot object
+    Returns a matplotlib Figure object for Streamlit.
     """
-    plt.figure(figsize=(6,6))
+    fig, ax = plt.subplots(figsize=(6,6))
     sns.set(style="whitegrid")
-    sns.scatterplot(x=y_test, y=y_pred, color="blue", s=60)
-    plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', linewidth=2)
-    plt.xlabel("Actual", fontsize=12)
-    plt.ylabel("Predicted", fontsize=12)
-    plt.title("Predicted vs Actual", fontsize=14)
-    plt.tight_layout()
-    return plt
+    sns.scatterplot(x=y_test, y=y_pred, color="blue", s=60, ax=ax)
+    ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', linewidth=2)
+    ax.set_xlabel("Actual", fontsize=12)
+    ax.set_ylabel("Predicted", fontsize=12)
+    ax.set_title("Predicted vs Actual", fontsize=14)
+    fig.tight_layout()
+    return fig

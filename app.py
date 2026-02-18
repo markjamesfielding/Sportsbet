@@ -54,7 +54,6 @@ if data_option == "Use Sample Dataset":
 # ---- FILE UPLOAD OPTION ----
 elif data_option == "Upload Your Own CSV":
     uploaded_file = st.file_uploader("Upload CSV file", type="csv")
-
     if uploaded_file is not None:
         try:
             df = pd.read_csv(uploaded_file)
@@ -75,6 +74,13 @@ if df is not None:
         [col for col in df.columns if col != target]
     )
 
+    model_type = st.radio(
+        "Select Model Type",
+        ("linear", "xgb"),
+        index=0,
+        help="Linear Regression or XGBoost"
+    )
+
     # ---- RUN MODEL ----
     if st.button("Run Model"):
 
@@ -85,8 +91,10 @@ if df is not None:
             y = df[target]
 
             with st.spinner("Training model..."):
-                model, X_train, X_test, y_train, y_test, y_pred = task.train_model(X, y)
-
+                # Call task.py functions
+                model, X_train, X_test, y_train, y_test, y_pred = task.train_model(
+                    X, y, model_type=model_type
+                )
                 r2, rmse = task.calculate_metrics(y_test, y_pred)
 
             st.subheader("Model Performance")
@@ -94,4 +102,24 @@ if df is not None:
             st.metric("RMSE", f"{rmse:.3f}")
 
             st.subheader("Predicted vs Actual")
-            fig = task.plot_predicted_vs_actu_
+            fig = task.plot_predicted_vs_actual(y_test, y_pred)
+            st.pyplot(fig)
+
+# ---- STEP 3: Download ML Workflow Code ----
+st.subheader("Download the ML Workflow Code")
+
+try:
+    with open("task.py", "r", encoding="utf-8") as f:
+        code_text = f.read()
+
+    with st.expander("Show / Hide Python ML Code"):
+        st.code(code_text, language="python")
+        st.download_button(
+            label="Download task.py",
+            data=code_text,
+            file_name="task.py",
+            mime="text/plain"
+        )
+
+except Exception as e:
+    st.error(f"Could not display or download the code: {e}")
