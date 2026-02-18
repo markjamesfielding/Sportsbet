@@ -1,81 +1,97 @@
-# app.py - Modular Streamlit ML App
+# app.py - Clean Modular Streamlit ML App
 # -*- coding: utf-8 -*-
 
 import streamlit as st
 import pandas as pd
 import numpy as np
-import task  # Updated ML workflow module
+import task
+
+st.set_page_config(page_title="Sportsbet ML Task", layout="wide")
 
 # ---- App Title ----
 st.title("Sportsbet ML Task - Modular Template")
 
 st.markdown("""
-This app allows you to upload a CSV dataset, select a target variable and features,
-fit a simple linear regression model, and display results including **R²**, **RMSE**, 
-and a predicted vs actual scatter plot.
+This app allows you to:
 
-(**The ML workflow code can be downloaded below**)
+• Upload a CSV dataset **or** use a built-in sample dataset  
+• Select a target variable and features  
+• Fit a regression model  
+• View **R²**, **RMSE**, and a Predicted vs Actual plot  
+• Download the ML workflow code  
+
+---
 """)
 
-# ---- Step 0: Optional Sample CSV ----
-if st.checkbox("Use Sample Dataset"):
+# ---- STEP 1: Data Source Selection ----
+st.subheader("Step 1: Choose Data Source")
+
+data_option = st.radio(
+    "Select one option:",
+    ("Use Sample Dataset", "Upload Your Own CSV")
+)
+
+df = None
+
+# ---- SAMPLE DATA OPTION ----
+if data_option == "Use Sample Dataset":
     np.random.seed(123)
     df = pd.DataFrame({
         "Feature1": np.random.rand(50) * 10,
         "Feature2": np.random.rand(50) * 5,
         "Feature3": np.random.rand(50) * 20,
     })
-    df["Target"] = 2.5 * df["Feature1"] - 1.5 * df["Feature2"] + 0.5 * df["Feature3"] + np.random.randn(50) * 2
-    st.subheader("Sample Data Preview")
-    st.dataframe(df.head(10))
+    df["Target"] = (
+        2.5 * df["Feature1"]
+        - 1.5 * df["Feature2"]
+        + 0.5 * df["Feature3"]
+        + np.random.randn(50) * 2
+    )
 
-# ---- Step 1: Upload CSV ----
-uploaded_file = st.file_uploader("Or Upload Your CSV Dataset", type="csv")
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file, encoding='utf-8')
-    st.subheader("Data Preview")
-    st.dataframe(df.head(10))
+    st.success("Sample dataset loaded.")
+    st.dataframe(df.head())
 
-# ---- Step 2: Select target and features ----
-if 'df' in locals():
+# ---- FILE UPLOAD OPTION ----
+elif data_option == "Upload Your Own CSV":
+    uploaded_file = st.file_uploader("Upload CSV file", type="csv")
+
+    if uploaded_file is not None:
+        try:
+            df = pd.read_csv(uploaded_file)
+            st.success("Dataset uploaded successfully.")
+            st.dataframe(df.head())
+        except Exception as e:
+            st.error(f"Error reading file: {e}")
+
+# ---- STEP 2: Model Configuration ----
+if df is not None:
+
+    st.subheader("Step 2: Configure Model")
+
     target = st.selectbox("Select Target Variable", df.columns)
-    features = st.multiselect("Select Features", [col for col in df.columns if col != target])
 
-    # ---- Step 3: Run Model Button ----
-    if st.button("Run Model") and features:
-        X = df[features]
-        y = df[target]
+    features = st.multiselect(
+        "Select Feature Columns",
+        [col for col in df.columns if col != target]
+    )
 
-        # ---- Train Model and Predict ----
-        model, X_train, X_test, y_train, y_test, y_pred = task.train_model(X, y)
+    # ---- RUN MODEL ----
+    if st.button("Run Model"):
 
-        # ---- Metrics ----
-        r2, rmse = task.calculate_metrics(y_test, y_pred)
-        st.subheader("Metrics")
-        st.text(f"R²: {r2:.3f}")
-        st.text(f"RMSE: {rmse:.3f}")
+        if not features:
+            st.warning("Please select at least one feature.")
+        else:
+            X = df[features]
+            y = df[target]
 
-        # ---- Predicted vs Actual Plot ----
-        st.subheader("Predicted vs Actual")
-        plt_fig = task.plot_predicted_vs_actual(y_test, y_pred)
-        st.pyplot(plt_fig)
+            with st.spinner("Training model..."):
+                model, X_train, X_test, y_train, y_test, y_pred = task.train_model(X, y)
 
-# ---- Step 4: Display / Download the ML code ----
-st.subheader("Download the ML Workflow Code")
+                r2, rmse = task.calculate_metrics(y_test, y_pred)
 
-try:
-    with open("task.py", "r", encoding="utf-8") as f:
-        code_text = f.read()
+            st.subheader("Model Performance")
+            st.metric("R²", f"{r2:.3f}")
+            st.metric("RMSE", f"{rmse:.3f}")
 
-    with st.expander("Show / Hide Python ML Code"):
-        st.code(code_text, language="python")
-
-        st.download_button(
-            label="Download task.py",
-            data=code_text,
-            file_name="task.py",
-            mime="text/plain"
-        )
-
-except Exception as e:
-    st.error(f"Could not display or download the code: {e}")
+            st.subheader("Predicted vs Actual")
+            fig = task.plot_predicted_vs_actu_
